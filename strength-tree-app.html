@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>优点树 - 发现孩子的闪光点</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>优点树</h1>
+        </header>
+        
+        <div class="main-content">
+            <div class="tree-container">
+                <div class="tree">
+                    <div class="tree-branches"></div>
+                    <div class="tree-trunk"></div>
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button id="add-strength" aria-label="添加新优点">添加优点</button>
+                <button id="view-all" aria-label="查看所有优点列表">查看所有优点</button>
+                <button id="achievements" aria-label="查看成就系统">成就系统</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="add-modal" class="modal" role="dialog" aria-labelledby="modal-title">
+        <div class="modal-content">
+            <h2 id="modal-title">记录新优点</h2>
+            <div class="form-group">
+                <label for="strength-name">优点名称:</label>
+                <input type="text" id="strength-name" placeholder="例如：耐心、助人为乐、勇敢...">
+            </div>
+            
+            <div class="form-group">
+                <label for="strength-description">描述这个优点 (具体事例):</label>
+                <textarea id="strength-description" rows="4" placeholder="描述孩子是如何展现这个优点的..."></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="strength-category">分类:</label>
+                <select id="strength-category">
+                    <option value="social">社交能力</option>
+                    <option value="academic">学习能力</option>
+                    <option value="emotional">情感管理</option>
+                    <option value="creative">创造力</option>
+                    <option value="physical">体能表现</option>
+                    <option value="character">品格特质</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="strength-date">日期:</label>
+                <input type="date" id="strength-date">
+            </div>
+            
+            <div class="btn-group">
+                <button id="cancel-add">取消</button>
+                <button id="save-strength">保存</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="detail-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="detail-title">优点详情</h2>
+            <p id="detail-description"></p>
+            <p><strong>分类:</strong> <span id="detail-category"></span></p>
+            <p><strong>记录日期:</strong> <span id="detail-date"></span></p>
+            <p><strong>进步次数:</strong> <span id="detail-count"></span></p>
+            
+            <div class="btn-group">
+                <button id="close-detail">关闭</button>
+                <button id="add-progress">记录新进步</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="all-strengths-modal" class="modal">
+        <div class="modal-content">
+            <h2>所有优点</h2>
+            <div id="strengths-list">
+                <!-- 动态生成优点列表 -->
+            </div>
+            
+            <div class="btn-group">
+                <button id="close-all">关闭</button>
+            </div>
+        </div>
+    </div>
+    
+    <div id="achievement-banner" class="achievement-banner">
+        <h3>🎉 新成就解锁! 🎉</h3>
+        <p id="achievement-text"></p>
+    </div>
+    
+    <script>
+        // 初始化数据
+        let strengths = [];
+        let achievements = [];
+        
+        try {
+            strengths = JSON.parse(localStorage.getItem('strengths')) || [];
+            achievements = JSON.parse(localStorage.getItem('achievements')) || [];
+        } catch (error) {
+            console.error('Error loading data from localStorage:', error);
+            // 如果数据损坏，重置为空数组
+            localStorage.setItem('strengths', '[]');
+            localStorage.setItem('achievements', '[]');
+        }
+        
+        // 颜色映射表 - 每个分类对应不同颜色
+        const categoryColors = {
+            'social': '#FF7F50', // 珊瑚色
+            'academic': '#9370DB', // 紫色
+            'emotional': '#FF69B4', // 粉色
+            'creative': '#FFD700', // 金色
+            'physical': '#32CD32', // 绿色
+            'character': '#1E90FF' // 蓝色
+        };
+        
+        // 设置当前日期为默认日期
+        document.getElementById('strength-date').valueAsDate = new Date();
+        
+        // 防抖函数
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // 优化的保存函数
+        const saveToLocalStorage = debounce((key, data) => {
+            try {
+                localStorage.setItem(key, JSON.stringify(data));
+            } catch (error) {
+                console.error(`Error saving ${key} to localStorage:`, error);
+                alert('保存数据时出现错误，请稍后重试');
+            }
+        }, 1000);
+        
+        // 创建SVG树结构
+        function createTree() {
+            try {
+                const treeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+                treeSvg.setAttribute('width', '100%');
+                treeSvg.setAttribute('height', '100%');
+                treeSvg.setAttribute('viewBox', '0 0 400 500');
+                treeSvg.classList.add('tree-svg');
+                
+                // 创建树干渐变
+                const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                
+                // 树干渐变
+                const trunkGradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
+                trunkGradient.setAttribute('id', 'trunkGradient');
+                trunkGradient.setAttribute('gradientTransform', 'rotate(90)');
+                
+                const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+                stop1.setAttribute('offset', '0%');
+                stop1.setAttribute('stop-color', '#6D4C41');
+                
+                const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
+                stop2.setAttribute('offset', '100%');
+                stop2.setAttribute('stop-color', '#8D6E63');
+                
+                trunkGradient.appendChild(stop1);
+                trunkGradient.appendChild(stop2);
+                defs.appendChild(trunkGradient);
+                
+                // 叶子发光滤镜
+                const glowFilter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
+                glowFilter.setAttribute('id', 'leafGlow');
+                glowFilter.setAttribute('x', '-50%');
+                glowFilter.setAttribute('y', '-50%');
+                glowFilter.setAttribute('width', '200%');
+                glowFilter.setAttribute('height', '200%');
+                
+                const feGaussianBlur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
+                feGaussianBlur.setAttribute('stdDeviation', '2');
+                feGaussianBlur.setAttribute('result', 'blur');
+                glowFilter.appendChild(feGaussianBlur);
+                
+                const feComposite = document.createElementNS('http://www.w3.org/2000/svg', 'feComposite');
+                feComposite.setAttribute('in', 'SourceGraphic');
+                feComposite.setAttribute('in2', 'blur');
+                feComposite.setAttribute('operator', 'over');
+                glowFilter.appendChild(feComposite);
+                
+                defs.appendChild(glowFilter);
+                
+                // 创建地面/土壤
+                const ground = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                ground.setAttribute('d', 'M50,500 C100,480 300,480 350,500 L350,500 L50,500 Z');
+                ground.setAttribute('fill', '#3E2723');
+                ground.setAttribute('opacity', '0.7');
+                
+                // 创建更自然的树干
+                const trunk = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                trunk.setAttribute('d', 'M200,500 C190,450 185,400 190,350 C195,300 185,250 200,200 C210,250 205,300 210,350 C215,400 210,450 200,500 Z');
+                trunk.setAttribute('fill', 'url(#trunkGradient)');
+                trunk.classList.add('svg-trunk');
+                
+                // 添加主要分支 - 更有机的弯曲形状
+                const branches = [];
+                
+                // 左侧分支 - 更加自然的曲线
+                branches.push(createBranch('M195,340 C170,320 140,310 110,320', 5));
+                branches.push(createBranch('M110,320 C90,325 70,330 60,310', 3));
+                branches.push(createBranch('M110,320 C100,300 85,280 95,260', 3));
+                
+                branches.push(createBranch('M192,290 C160,285 130,270 115,240', 5));
+                branches.push(createBranch('M115,240 C105,220 95,205 75,210', 3));
+                branches.push(createBranch('M115,240 C110,215 115,190 105,175', 3));
+                
+                branches.push(createBranch('M190,240 C170,220 155,190 160,160', 4));
+                branches.push(createBranch('M160,160 C165,140 155,120 135,115', 3));
+                branches.push(createBranch('M160,160 C145,145 130,140 120,125', 3));
+                
+                // 右侧分支
+                branches.push(createBranch('M205,340 C230,320 260,310 290,320', 5));
+                branches.push(createBranch('M290,320 C310,325 330,330 340,310', 3));
+                branches.push(createBranch('M290,320 C300,300 315,280 305,260', 3));
+                
+                branches.push(createBranch('M208,290 C240,285 270,270 285,240', 5));
+                branches.push(createBranch('M285,240 C295,220 305,205 325,210', 3));
+                branches.push(createBranch('M285,240 C290,215 285,190 295,175', 3));
+                
+                branches.push(createBranch('M210,240 C230,220 245,190 240,160', 4));
+                branches.push(createBranch('M240,160 C235,140 245,120 265,115', 3));
+                branches.push(createBranch('M240,160 C255,145 270,140 280,125', 3));
+                
+                // 顶部分支
+                branches.push(createBranch('M200,200 C190,180 185,160 200,140', 4));
+                branches.push(createBranch('M200,140 C190,120 200,100 190,80', 3));
+                branches.push(createBranch('M200,140 C210,120 200,100 210,80', 3));
+                
+                // 小树枝 - 增加更多细节
+                const twigs = [];
+                // 左侧小枝
+                twigs.push(createTwig('M135,115 C125,105 115,100 105,105', 1.5));
+                twigs.push(createTwig('M120,125 C110,120 100,125 95,115', 1.5));
+                twigs.push(createTwig('M105,175 C95,170 85,165 80,155', 1.5));
+                twigs.push(createTwig('M75,210 C65,205 55,210 50,200', 1.5));
+                twigs.push(createTwig('M95,260 C85,250 75,255 65,250', 1.5));
+                twigs.push(createTwig('M60,310 C50,305 45,295 35,300', 1.5));
+                
+                // 右侧小枝
+                twigs.push(createTwig('M265,115 C275,105 285,100 295,105', 1.5));
+                twigs.push(createTwig('M280,125 C290,120 300,125 305,115', 1.5));
+                twigs.push(createTwig('M295,175 C305,170 315,165 320,155', 1.5));
+                twigs.push(createTwig('M325,210 C335,205 345,210 350,200', 1.5));
+                twigs.push(createTwig('M305,260 C315,250 325,255 335,250', 1.5));
+                twigs.push(createTwig('M340,310 C350,305 355,295 365,300', 1.5));
+                
+                // 顶部小枝
+                twigs.push(createTwig('M190,80 C180,70 175,60 185,50', 1.5));
+                twigs.push(createTwig('M210,80 C220,70 225,60 215,50', 1.5));
+                
+                // 添加模拟树叶区域 - 更自然的分布
+                const foliageGroups = [
+                    { cx: 200, cy: 100, rx: 100, ry: 80 },     // 顶部
+                    { cx: 150, cy: 140, rx: 70, ry: 55 },      // 左上
+                    { cx: 250, cy: 140, rx: 70, ry: 55 },      // 右上
+                    { cx: 115, cy: 200, rx: 60, ry: 45 },      // 左中上
+                    { cx: 285, cy: 200, rx: 60, ry: 45 },      // 右中上
+                    { cx: 90, cy: 270, rx: 60, ry: 45 },       // 左中下
+                    { cx: 310, cy: 270, rx: 60, ry: 45 },      // 右中下
+                    { cx: 90, cy: 330, rx: 55, ry: 40 },       // 左下
+                    { cx: 310, cy: 330, rx: 55, ry: 40 }       // 右下
+                ];
+                
+                // 将所有元素添加到SVG
+                treeSvg.appendChild(defs);
+                treeSvg.appendChild(ground);
+                treeSvg.appendChild(trunk);
+                
+                // 添加分支
+                branches.forEach(branch => treeSvg.appendChild(branch));
+                
+                // 添加小树枝
+                twigs.forEach(twig => treeSvg.appendChild(twig));
+                
+                // 添加树叶区域
+                const foliageFragment = document.createDocumentFragment();
+                foliageGroups.forEach((ellipse, index) => {
+                    const foliage = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
+                    Object.entries(ellipse).forEach(([attr, value]) => {
+                        foliage.setAttribute(attr, value);
+                    });
+                    foliage.setAttribute('fill', 'rgba(10, 77, 46, 0.1)');
+                    foliage.setAttribute('data-area', `area-${index}`);
+                    foliage.classList.add('foliage-area');
+                    foliageFragment.appendChild(foliage);
+                });
+                treeSvg.appendChild(foliageFragment);
+                
+                return treeSvg;
+            } catch (error) {
+                console.error('Error creating tree:', error);
+                // 创建一个简单的错误提示
+                const errorElement = document.createElement('div');
+                errorElement.textContent = '创建树时出错，请刷新页面重试';
+                errorElement.style.color = 'red';
+                return errorElement;
+            }
+        }
+
+        // 创建分支辅助函数 - 使用更自然的线条样式
+        function createBranch(pathD, width) {
+            const branch = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            branch.setAttribute('d', pathD);
+            branch.setAttribute('stroke', '#5D4037');
+            branch.setAttribute('stroke-width', width);
+            branch.setAttribute('fill', 'none');
+            branch.setAttribute('stroke-linecap', 'round');
+            branch.classList.add('tree-branch');
+            return branch;
+        }
+
+        // 创建小树枝辅助函数 - 更细的线条
+        function createTwig(pathD, width) {
+            const twig = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            twig.setAttribute('d', pathD);
+            twig.setAttribute('stroke', '#6D4C41');
+            twig.setAttribute('stroke-width', width);
+            twig.setAttribute('fill', 'none');
+            twig.setAttribute('stroke-linecap', 'round');
+            twig.classList.add('tree-twig');
+            return twig;
+        }
+
+        // 更新叶子样式 - 更自然的形状
+        function generateLeafSVG(color, count) {
+            return `
+                <svg width="40" height="40" viewBox="0 0 100 100">
+                    <path d="M50,10 C65,25 90,25 90,50 C90,75 65,85 50,90 C35,85 10,75 10,50 C10,25 35,25 50,10 Z" 
+                          fill="${color}" 
+                          filter="url(#leafGlow)" />
+                    <text x="50" y="55" text-anchor="middle" fill="white" font-size="16" font-weight="bold">${count}</text>
+                </svg>
+            `;
+        }
+
+        // 优化生物发光效果 - 更自然的分布和动画
+        function addBioLuminescence() {
+            try {
+                const treeElement = document.querySelector('.tree');
+                if (!treeElement) {
+                    console.error('Tree element not found');
+                    return;
+                }
+                
+                const treeRect = treeElement.getBoundingClientRect();
+                const fragment = document.createDocumentFragment();
+                
+                // 获取所有树叶区域
+                const foliageAreas = document.querySelectorAll('.foliage-area');
+                
+                // 为每个区域添加发光点
+                foliageAreas.forEach(area => {
+                    const bbox = area.getBBox();
+                    
+                    // 为每个区域生成10-15个发光点
+                    const numLights = 10 + Math.floor(Math.random() * 6);
+                    
+                    for (let i = 0; i < numLights; i++) {
+                        const light = document.createElement('div');
+                        light.classList.add('bio-luminescence');
+                        
+                        // 在椭圆区域内随机放置
+                        const angle = Math.random() * Math.PI * 2;
+                        const radiusX = (Math.random() * 0.8 + 0.2) * bbox.width / 2;
+                        const radiusY = (Math.random() * 0.8 + 0.2) * bbox.height / 2;
+                        
+                        const x = Math.cos(angle) * radiusX + bbox.x + bbox.width/2;
+                        const y = Math.sin(angle) * radiusY + bbox.y + bbox.height/2;
+                        
+                        // 计算相对于视图区域的百分比位置
+                        const percentX = (x / 400) * 100;
+                        const percentY = (y / 500) * 100;
+                        
+                        const size = 2 + Math.random() * 3;
+                        
+                        Object.assign(light.style, {
+                            left: `${percentX}%`,
+                            top: `${percentY}%`,
+                            width: `${size}px`,
+                            height: `${size}px`,
+                            animationDelay: `${Math.random() * 5}s`,
+                            animationDuration: `${2 + Math.random() * 3}s`
+                        });
+                        
+                        fragment.appendChild(light);
+                    }
+                });
+                
+                treeElement.appendChild(fragment);
+            } catch (error) {
+                console.error('Error adding bio-luminescence:', error);
+            }
+        }
+
+        // 更新叶子生成函数 - 使用更自然的叶子形状
+        function addLeafToTree(strength, index) {
+            try {
+                const leaf = document.createElement('div');
+                leaf.classList.add('leaf');
+                leaf.dataset.index = index;
+                
+                // 生成SVG叶子
+                const color = categoryColors[strength.category] || '#FFFFFF';
+                leaf.innerHTML = generateLeafSVG(color, strength.count);
+                
+                // 根据分类选择放置区域
+                let areaIndex;
+                switch(strength.category) {
+                    case 'social': areaIndex = 1; break;      // 左上
+                    case 'academic': areaIndex = 2; break;    // 右上
+                    case 'emotional': areaIndex = 0; break;   // 顶部
+                    case 'creative': areaIndex = 3; break;    // 左中上
+                    case 'physical': areaIndex = 4; break;    // 右中上
+                    case 'character': areaIndex = 0; break;   // 顶部
+                    default: areaIndex = Math.floor(Math.random() * 9);
+                }
+                
+                const foliageArea = document.querySelector(`[data-area="area-${areaIndex}"]`);
+                if (!foliageArea) {
+                    placeLeafRandomly(leaf);
+                    return;
+                }
+                
+                // 获取该区域的位置和大小
+                const bbox = foliageArea.getBBox();
+                
+                // 在椭圆区域内随机放置 - 更自然的分布
+                const angle = Math.random() * Math.PI * 2;
+                const radiusX = (Math.random() * 0.8 + 0.2) * bbox.width / 2;
+                const radiusY = (Math.random() * 0.8 + 0.2) * bbox.height / 2;
+                
+                const x = Math.cos(angle) * radiusX + bbox.x + bbox.width/2;
+                const y = Math.sin(angle) * radiusY + bbox.y + bbox.height/2;
+                
+                // 计算相对于视图区域的百分比位置
+                const percentX = (x / 400) * 100;
+                const percentY = (y / 500) * 100;
+                
+                leaf.style.left = `${percentX}%`;
+                leaf.style.top = `${percentY}%`;
+                
+                // 随机旋转 - 更自然的角度
+                const rotation = -20 + Math.random() * 40; // -20到20度之间的角度
+                leaf.style.transform = `rotate(${rotation}deg)`;
+                
+                // 根据计数调整大小
+                const scale = 0.8 + Math.min(strength.count * 0.05, 0.8); // 最大放大到1.6倍
+                leaf.style.setProperty('--leaf-scale', scale);
+                
+                // 点击事件显示详情
+                leaf.addEventListener('click', () => showStrengthDetails(index));
+                
+                document.querySelector('.tree').appendChild(leaf);
+            } catch (error) {
+                console.error('Error adding leaf to tree:', error);
+                // 如果出错，尝试使用随机放置作为后备方案
+                try {
+                    placeLeafRandomly(leaf);
+                } catch (fallbackError) {
+                    console.error('Fallback placement failed:', fallbackError);
+                }
+            }
+        }
+
+        // 随机放置叶子
+        function placeLeafRandomly(leaf) {
+            const treeElement = document.querySelector('.tree');
+            const treeRect = treeElement.getBoundingClientRect();
+            
+            const centerX = treeRect.width / 2;
+            const centerY = treeRect.height / 2 - 50;
+            
+            const radius = Math.min(treeRect.width, treeRect.height) * 0.4;
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * radius;
+            
+            const x = Math.cos(angle) * distance + centerX - 20;
+            const y = Math.sin(angle) * distance + centerY - 20;
+            
+            leaf.style.left = `${x}px`;
+            leaf.style.top = `${y}px`;
+        }
+
+        // 显示优点详情
+        function showStrengthDetails(index) {
+            const strength = strengths[index];
+            
+            document.getElementById('detail-title').textContent = strength.name;
+            document.getElementById('detail-description').textContent = strength.description;
+            document.getElementById('detail-category').textContent = getCategoryName(strength.category);
+            document.getElementById('detail-date').textContent = strength.date;
+            document.getElementById('detail-count').textContent = strength.count;
+            
+            // 保存当前查看的优点索引
+            document.getElementById('add-progress').dataset.index = index;
+            
+            // 显示模态框
+            document.getElementById('detail-modal').style.display = 'flex';
+        }
+        
+        // 获取分类的中文名称
+        function getCategoryName(category) {
+            const categoryNames = {
+                'social': '社交能力',
+                'academic': '学习能力',
+                'emotional': '情感管理',
+                'creative': '创造力',
+                'physical': '体能表现',
+                'character': '品格特质'
+            };
+            
+            return categoryNames[category] || category;
+        }
+        
+        // 添加优点
+        document.getElementById('add-strength').addEventListener('click', () => {
+            document.getElementById('add-modal').style.display = 'flex';
+        });
+        
+        // 保存优点
+        document.getElementById('save-strength').addEventListener('click', async () => {
+            const name = document.getElementById('strength-name').value.trim();
+            const description = document.getElementById('strength-description').value.trim();
+            const category = document.getElementById('strength-category').value;
+            const date = document.getElementById('strength-date').value;
+            
+            if (!name || !description) {
+                alert('请填写优点名称和描述');
+                return;
+            }
+            
+            // 创建新优点
+            const newStrength = {
+                name,
+                description,
+                category,
+                date,
+                count: 1,
+                progress: [{
+                    description,
+                    date
+                }]
+            };
+            
+            // 添加到数组
+            strengths.push(newStrength);
+            
+            // 保存到本地存储
+            saveToLocalStorage('strengths', strengths);
+            
+            // 关闭模态框并清空表单
+            document.getElementById('add-modal').style.display = 'none';
+            document.getElementById('strength-name').value = '';
+            document.getElementById('strength-description').value = '';
+            document.getElementById('strength-date').valueAsDate = new Date();
+            
+            // 添加树生长动画
+            const treeSvg = document.querySelector('.tree-svg');
+            treeSvg.classList.add('tree-pulse');
+            
+            // 创建并添加新叶子
+            const leaf = document.createElement('div');
+            leaf.classList.add('leaf');
+            leaf.dataset.index = strengths.length - 1;
+            
+            // 设置随机初始旋转角度
+            const initialRotation = Math.random() * 360;
+            leaf.style.setProperty('--initial-rotation', `${initialRotation}deg`);
+            
+            // 延迟添加叶子，配合树生长动画
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // 添加叶子到树上
+            addLeafToTree(newStrength, strengths.length - 1);
+            
+            // 获取新添加的叶子并添加出现动画
+            const newLeaf = document.querySelector(`.leaf[data-index="${strengths.length - 1}"]`);
+            newLeaf.classList.add('leaf-appear');
+            
+            // 移除树生长动画
+            setTimeout(() => {
+                treeSvg.classList.remove('tree-pulse');
+                newLeaf.classList.remove('leaf-appear');
+            }, 1500);
+            
+            // 检查成就
+            checkAchievements(strengths.length, category);
+        });
+        
+        // 记录新进步
+        document.getElementById('add-progress').addEventListener('click', async () => {
+            const index = parseInt(document.getElementById('add-progress').dataset.index);
+            
+            // 提示用户输入新进步
+            const progressDescription = prompt('请描述这次的进步:');
+            
+            if (progressDescription && progressDescription.trim()) {
+                // 更新优点
+                strengths[index].count++;
+                strengths[index].progress.push({
+                    description: progressDescription.trim(),
+                    date: new Date().toISOString().split('T')[0]
+                });
+                
+                // 保存到本地存储
+                saveToLocalStorage('strengths', strengths);
+                
+                // 更新详情显示
+                document.getElementById('detail-count').textContent = strengths[index].count;
+                
+                // 获取叶子元素
+                const leafElement = document.querySelector(`.leaf[data-index="${index}"]`);
+                
+                // 保存当前旋转角度
+                const currentTransform = getComputedStyle(leafElement).transform;
+                const currentRotation = currentTransform !== 'none' 
+                    ? Math.atan2(currentTransform.split(', ')[1], currentTransform.split(', ')[0]) * (180/Math.PI)
+                    : 0;
+                
+                leafElement.style.setProperty('--initial-rotation', `${currentRotation}deg`);
+                
+                // 添加进步动画
+                leafElement.classList.add('leaf-progress');
+                
+                // 更新叶子上的计数（在动画中间点）
+                setTimeout(() => {
+                    leafElement.querySelector('text').textContent = strengths[index].count;
+                }, 1000);
+                
+                // 添加树生长动画
+                const treeSvg = document.querySelector('.tree-svg');
+                treeSvg.classList.add('tree-pulse');
+                
+                // 移除动画类
+                setTimeout(() => {
+                    leafElement.classList.remove('leaf-progress');
+                    treeSvg.classList.remove('tree-pulse');
+                }, 2000);
+                
+                // 检查成就
+                checkAchievements(0, strengths[index].category, strengths[index].count);
+                
+                // 关闭模态框
+                document.getElementById('detail-modal').style.display = 'none';
+            }
+        });
+        
+        // 查看所有优点
+        document.getElementById('view-all').addEventListener('click', () => {
+            const listElement = document.getElementById('strengths-list');
+            listElement.innerHTML = '';
+            
+            if (strengths.length === 0) {
+                listElement.innerHTML = '<p>还没有记录优点，点击"添加优点"开始记录吧！</p>';
+            } else {
+                const categories = {};
+                
+                // 按分类分组
+                strengths.forEach((strength, index) => {
+                    if (!categories[strength.category]) {
+                        categories[strength.category] = [];
+                    }
+                    categories[strength.category].push({...strength, index});
+                });
+                
+                // 遍历分类创建列表
+                for (const category in categories) {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.innerHTML = `<h3 style="color: ${categoryColors[category]}">${getCategoryName(category)}</h3>`;
+                    
+                    const strengthsList = document.createElement('ul');
+                    categories[category].forEach(strength => {
+                        const listItem = document.createElement('li');
+                        listItem.innerHTML = `
+                            <a href="#" data-index="${strength.index}">${strength.name} (进步次数: ${strength.count})</a>
+                        `;
+                        listItem.querySelector('a').addEventListener('click', (e) => {
+                            e.preventDefault();
+                            document.getElementById('all-strengths-modal').style.display = 'none';
+                            showStrengthDetails(strength.index);
+                        });
+                        strengthsList.appendChild(listItem);
+                    });
+                    
+                    categoryDiv.appendChild(strengthsList);
+                    listElement.appendChild(categoryDiv);
+                }
+            }
+            
+            document.getElementById('all-strengths-modal').style.display = 'flex';
+        });
+        
+        // 检查成就
+        function checkAchievements(totalStrengths, category, count) {
+            let newAchievement = null;
+            
+            // 数量成就
+            if (totalStrengths === 1 && !hasAchievement('first_strength')) {
+                newAchievement = {
+                    id: 'first_strength',
+                    name: '第一次发现',
+                    description: '记录了第一个优点！继续探索更多吧！'
+                };
+            } else if (totalStrengths === 5 && !hasAchievement('five_strengths')) {
+                newAchievement = {
+                    id: 'five_strengths',
+                    name: '光芒初现',
+                    description: '已经发现了5个优点！孩子正在茁壮成长！'
+                };
+            } else if (totalStrengths === 10 && !hasAchievement('ten_strengths')) {
+                newAchievement = {
+                    id: 'ten_strengths',
+                    name: '闪耀之树',
+                    description: '发现了10个优点！这棵树真是光彩夺目！'
+                };
+            }
+            
+            // 分类成就
+            if (category) {
+                const categoryStrengths = strengths.filter(s => s.category === category).length;
+                if (categoryStrengths === 3 && !hasAchievement(`${category}_expert`)) {
+                    const categoryNames = {
+                        'social': '社交达人',
+                        'academic': '学习能手',
+                        'emotional': '情绪管理师',
+                        'creative': '创造天才',
+                        'physical': '运动健将',
+                        'character': '品格楷模'
+                    };
+                    
+                    newAchievement = {
+                        id: `${category}_expert`,
+                        name: categoryNames[category],
+                        description: `在${getCategoryName(category)}方面发现了3个优点！`
+                    };
+                }
+            }
+            
+            // 进步次数成就
+            if (count === 5 && !hasAchievement('five_progress')) {
+                newAchievement = {
+                    id: 'five_progress',
+                    name: '持续进步',
+                    description: '在一个优点上取得了5次进步！坚持的力量真伟大！'
+                };
+            } else if (count === 10 && !hasAchievement('ten_progress')) {
+                newAchievement = {
+                    id: 'ten_progress',
+                    name: '精益求精',
+                    description: '在一个优点上取得了10次进步！这已经成为一种优秀的习惯！'
+                };
+            }
+            
+            // 如果获得新成就
+            if (newAchievement) {
+                achievements.push(newAchievement);
+                saveToLocalStorage('achievements', achievements);
+                showAchievementBanner(newAchievement);
+            }
+        }
+        
+        // 检查是否已有成就
+        function hasAchievement(id) {
+            return achievements.some(a => a.id === id);
+        }
+        
+        // 显示成就横幅
+        function showAchievementBanner(achievement) {
+            const banner = document.getElementById('achievement-banner');
+            document.getElementById('achievement-text').textContent = achievement.name + ' - ' + achievement.description;
+            
+            banner.style.display = 'block';
+            
+            // 5秒后隐藏
+            setTimeout(() => {
+                banner.style.display = 'none';
+            }, 5000);
+        }
+        
+        // 关闭按钮
+        document.getElementById('cancel-add').addEventListener('click', () => {
+            document.getElementById('add-modal').style.display = 'none';
+        });
+        
+        document.getElementById('close-detail').addEventListener('click', () => {
+            document.getElementById('detail-modal').style.display = 'none';
+        });
+        
+        document.getElementById('close-all').addEventListener('click', () => {
+            document.getElementById('all-strengths-modal').style.display = 'none';
+        });
+        
+        // 成就系统
+        document.getElementById('achievements').addEventListener('click', () => {
+            const modal = document.createElement('div');
+            modal.classList.add('modal');
+            modal.style.display = 'flex';
+            
+            let content = `
+                <div class="modal-content">
+                    <h2>成就系统</h2>
+            `;
+            
+            if (achievements.length === 0) {
+                content += `<p>还没有解锁任何成就。继续记录孩子的优点，很快就会有惊喜！</p>`;
+            } else {
+                content += `<ul>`;
+                achievements.forEach(achievement => {
+                    content += `<li><strong>${achievement.name}</strong> - ${achievement.description}</li>`;
+                });
+                content += `</ul>`;
+            }
+            
+            content += `
+                    <div class="btn-group">
+                        <button id="close-achievements">关闭</button>
+                    </div>
+                </div>
+            `;
+            
+            modal.innerHTML = content;
+            document.body.appendChild(modal);
+            
+            document.getElementById('close-achievements').addEventListener('click', () => {
+                modal.remove();
+            });
+        });
+        
+        // 初始化树
+        function initTree() {
+            try {
+                // 获取树容器
+                const treeContainer = document.querySelector('.tree');
+                
+                // 清空现有内容
+                while (treeContainer.firstChild) {
+                    treeContainer.removeChild(treeContainer.firstChild);
+                }
+                
+                // 创建树的SVG结构
+                const treeSvg = createTree();
+                treeContainer.appendChild(treeSvg);
+                
+                // 添加生物发光效果
+                addBioLuminescence();
+                
+                // 添加现有的叶子
+                strengths.forEach((strength, index) => {
+                    addLeafToTree(strength, index);
+                });
+            } catch (error) {
+                console.error('Error initializing tree:', error);
+                alert('初始化树时出错，请刷新页面重试');
+            }
+        }
+
+        // 初始化应用
+        window.addEventListener('load', () => {
+            initTree();
+        });
+    </script>
+</body>
+</html>
