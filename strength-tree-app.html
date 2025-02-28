@@ -15,8 +15,8 @@
         <div class="main-content">
             <div class="tree-container">
                 <div class="tree">
-                    <div class="tree-branches"></div>
-                    <div class="tree-trunk"></div>
+                    <img src="image/tree.png" alt="树的背景" class="tree-background">
+                    <div class="leaves-container"></div>
                 </div>
             </div>
             
@@ -149,196 +149,122 @@
             }
         }, 1000);
         
-        // 创建SVG树结构
-        function createTree() {
+        // 定义叶子区域
+        const leafAreas = [
+            { id: 1, left: '20%', top: '20%', width: '25%', height: '25%' }, // 左上
+            { id: 2, left: '55%', top: '20%', width: '25%', height: '25%' }, // 右上
+            { id: 3, left: '35%', top: '35%', width: '30%', height: '30%' }, // 中央
+            { id: 4, left: '15%', top: '40%', width: '25%', height: '25%' }, // 左中
+            { id: 5, left: '60%', top: '40%', width: '25%', height: '25%' }  // 右中
+        ];
+        
+        // 初始化树
+        function initTree() {
             try {
-                const treeSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-                treeSvg.setAttribute('width', '100%');
-                treeSvg.setAttribute('height', '100%');
-                treeSvg.setAttribute('viewBox', '0 0 400 500');
-                treeSvg.classList.add('tree-svg');
+                const treeContainer = document.querySelector('.tree');
+                const leavesContainer = document.querySelector('.leaves-container');
                 
-                // 创建树干渐变
-                const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+                // 清空现有内容
+                leavesContainer.innerHTML = '';
                 
-                // 树干渐变
-                const trunkGradient = document.createElementNS('http://www.w3.org/2000/svg', 'linearGradient');
-                trunkGradient.setAttribute('id', 'trunkGradient');
-                trunkGradient.setAttribute('gradientTransform', 'rotate(90)');
-                
-                const stop1 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-                stop1.setAttribute('offset', '0%');
-                stop1.setAttribute('stop-color', '#6D4C41');
-                
-                const stop2 = document.createElementNS('http://www.w3.org/2000/svg', 'stop');
-                stop2.setAttribute('offset', '100%');
-                stop2.setAttribute('stop-color', '#8D6E63');
-                
-                trunkGradient.appendChild(stop1);
-                trunkGradient.appendChild(stop2);
-                defs.appendChild(trunkGradient);
-                
-                // 叶子发光滤镜
-                const glowFilter = document.createElementNS('http://www.w3.org/2000/svg', 'filter');
-                glowFilter.setAttribute('id', 'leafGlow');
-                glowFilter.setAttribute('x', '-50%');
-                glowFilter.setAttribute('y', '-50%');
-                glowFilter.setAttribute('width', '200%');
-                glowFilter.setAttribute('height', '200%');
-                
-                const feGaussianBlur = document.createElementNS('http://www.w3.org/2000/svg', 'feGaussianBlur');
-                feGaussianBlur.setAttribute('stdDeviation', '2');
-                feGaussianBlur.setAttribute('result', 'blur');
-                glowFilter.appendChild(feGaussianBlur);
-                
-                const feComposite = document.createElementNS('http://www.w3.org/2000/svg', 'feComposite');
-                feComposite.setAttribute('in', 'SourceGraphic');
-                feComposite.setAttribute('in2', 'blur');
-                feComposite.setAttribute('operator', 'over');
-                glowFilter.appendChild(feComposite);
-                
-                defs.appendChild(glowFilter);
-                
-                // 创建地面/土壤
-                const ground = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                ground.setAttribute('d', 'M50,500 C100,480 300,480 350,500 L350,500 L50,500 Z');
-                ground.setAttribute('fill', '#3E2723');
-                ground.setAttribute('opacity', '0.7');
-                
-                // 创建更自然的树干
-                const trunk = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                trunk.setAttribute('d', `
-                    M200,500 
-                    C195,450 190,400 195,350 
-                    C200,300 195,250 200,200 
-                    C205,250 200,300 205,350 
-                    C210,400 205,450 200,500 
-                    M193,450 
-                    C188,430 185,410 188,390 
-                    M207,450 
-                    C212,430 215,410 212,390
-                `);
-                trunk.setAttribute('fill', 'url(#trunkGradient)');
-                trunk.classList.add('svg-trunk');
-                
-                // 添加主要分支 - 更有机的弯曲形状
-                const branches = [];
-                
-                // 左侧主分支
-                branches.push(createBranch('M195,340 C170,320 140,310 110,320 C90,325 70,330 60,310', 5));
-                branches.push(createBranch('M192,290 C160,285 130,270 115,240 C105,220 95,205 75,210', 4));
-                branches.push(createBranch('M190,240 C170,220 155,190 160,160 C165,140 155,120 135,115', 4));
-                
-                // 右侧主分支
-                branches.push(createBranch('M205,340 C230,320 260,310 290,320 C310,325 330,330 340,310', 5));
-                branches.push(createBranch('M208,290 C240,285 270,270 285,240 C295,220 305,205 325,210', 4));
-                branches.push(createBranch('M210,240 C230,220 245,190 240,160 C235,140 245,120 265,115', 4));
-                
-                // 顶部分支
-                branches.push(createBranch('M200,200 C190,180 185,160 200,140 C210,120 200,100 190,80', 4));
-                branches.push(createBranch('M200,140 C210,120 215,100 210,80', 3));
-                
-                // 小树枝 - 增加更多细节
-                const twigs = [];
-                
-                // 左侧小枝
-                twigs.push(createTwig('M135,115 C125,105 115,100 105,105 C95,110 85,105 80,95', 1.5));
-                twigs.push(createTwig('M105,175 C95,170 85,165 80,155 C75,145 65,140 60,145', 1.5));
-                twigs.push(createTwig('M75,210 C65,205 55,210 50,200 C45,190 35,195 30,185', 1.5));
-                twigs.push(createTwig('M95,260 C85,250 75,255 65,250 C55,245 45,250 40,240', 1.5));
-                twigs.push(createTwig('M60,310 C50,305 45,295 35,300 C25,305 20,295 15,300', 1.5));
-                
-                // 右侧小枝
-                twigs.push(createTwig('M265,115 C275,105 285,100 295,105 C305,110 315,105 320,95', 1.5));
-                twigs.push(createTwig('M295,175 C305,170 315,165 320,155 C325,145 335,140 340,145', 1.5));
-                twigs.push(createTwig('M325,210 C335,205 345,210 350,200 C355,190 365,195 370,185', 1.5));
-                twigs.push(createTwig('M305,260 C315,250 325,255 335,250 C345,245 355,250 360,240', 1.5));
-                twigs.push(createTwig('M340,310 C350,305 355,295 365,300 C375,305 380,295 385,300', 1.5));
-                
-                // 顶部小枝
-                twigs.push(createTwig('M190,80 C180,70 175,60 185,50 C195,40 190,30 180,25', 1.5));
-                twigs.push(createTwig('M210,80 C220,70 225,60 215,50 C205,40 210,30 220,25', 1.5));
-                
-                // 添加更多装饰性的小枝条
-                twigs.push(createTwig('M150,200 C140,195 135,185 145,175', 1));
-                twigs.push(createTwig('M250,200 C260,195 265,185 255,175', 1));
-                twigs.push(createTwig('M170,280 C160,275 155,265 165,255', 1));
-                twigs.push(createTwig('M230,280 C240,275 245,265 235,255', 1));
-                
-                // 添加模拟树叶区域 - 更自然的分布
-                const foliageGroups = [
-                    { cx: 200, cy: 90, rx: 110, ry: 85 },      // 顶部中央
-                    { cx: 145, cy: 130, rx: 75, ry: 60 },      // 左上
-                    { cx: 255, cy: 130, rx: 75, ry: 60 },      // 右上
-                    { cx: 110, cy: 190, rx: 65, ry: 50 },      // 左中上
-                    { cx: 290, cy: 190, rx: 65, ry: 50 },      // 右中上
-                    { cx: 85, cy: 260, rx: 65, ry: 50 },       // 左中下
-                    { cx: 315, cy: 260, rx: 65, ry: 50 },      // 右中下
-                    { cx: 80, cy: 320, rx: 60, ry: 45 },       // 左下
-                    { cx: 320, cy: 320, rx: 60, ry: 45 },      // 右下
-                    { cx: 170, cy: 160, rx: 45, ry: 35 },      // 左中填充
-                    { cx: 230, cy: 160, rx: 45, ry: 35 },      // 右中填充
-                    { cx: 200, cy: 220, rx: 40, ry: 30 }       // 中央填充
-                ];
-                
-                // 将所有元素添加到SVG
-                treeSvg.appendChild(defs);
-                treeSvg.appendChild(ground);
-                treeSvg.appendChild(trunk);
-                
-                // 添加分支
-                branches.forEach(branch => treeSvg.appendChild(branch));
-                
-                // 添加小树枝
-                twigs.forEach(twig => treeSvg.appendChild(twig));
-                
-                // 添加树叶区域
-                const foliageFragment = document.createDocumentFragment();
-                foliageGroups.forEach((ellipse, index) => {
-                    const foliage = document.createElementNS('http://www.w3.org/2000/svg', 'ellipse');
-                    Object.entries(ellipse).forEach(([attr, value]) => {
-                        foliage.setAttribute(attr, value);
-                    });
-                    foliage.setAttribute('fill', 'rgba(10, 77, 46, 0.1)');
-                    foliage.setAttribute('data-area', `area-${index}`);
-                    foliage.classList.add('foliage-area');
-                    foliageFragment.appendChild(foliage);
+                // 创建叶子区域
+                leafAreas.forEach(area => {
+                    const areaDiv = document.createElement('div');
+                    areaDiv.classList.add('leaf-area', `leaf-area-${area.id}`);
+                    leavesContainer.appendChild(areaDiv);
                 });
-                treeSvg.appendChild(foliageFragment);
                 
-                return treeSvg;
+                // 添加现有的叶子
+                strengths.forEach((strength, index) => {
+                    addLeafToTree(strength, index);
+                });
+                
+                // 添加生物发光效果
+                addBioLuminescence();
+                
             } catch (error) {
-                console.error('Error creating tree:', error);
-                // 创建一个简单的错误提示
-                const errorElement = document.createElement('div');
-                errorElement.textContent = '创建树时出错，请刷新页面重试';
-                errorElement.style.color = 'red';
-                return errorElement;
+                console.error('Error initializing tree:', error);
+                alert('初始化树时出错，请刷新页面重试');
             }
         }
 
-        // 创建分支辅助函数 - 使用更自然的线条样式
-        function createBranch(pathD, width) {
-            const branch = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            branch.setAttribute('d', pathD);
-            branch.setAttribute('stroke', '#5D4037');
-            branch.setAttribute('stroke-width', width);
-            branch.setAttribute('fill', 'none');
-            branch.setAttribute('stroke-linecap', 'round');
-            branch.classList.add('tree-branch');
-            return branch;
+        // 添加叶子到树上
+        function addLeafToTree(strength, index) {
+            try {
+                const leaf = document.createElement('div');
+                leaf.classList.add('leaf');
+                leaf.dataset.index = index;
+                
+                // 根据分类选择区域
+                let areaIndex;
+                switch(strength.category) {
+                    case 'social': areaIndex = 0; break;      // 左上
+                    case 'academic': areaIndex = 1; break;    // 右上
+                    case 'emotional': areaIndex = 2; break;   // 中央
+                    case 'creative': areaIndex = 3; break;    // 左中
+                    case 'physical': areaIndex = 4; break;    // 右中
+                    case 'character': areaIndex = Math.floor(Math.random() * 5); break;
+                    default: areaIndex = Math.floor(Math.random() * 5);
+                }
+                
+                const area = leafAreas[areaIndex];
+                
+                // 在区域内随机位置
+                const randomX = Math.random() * parseFloat(area.width);
+                const randomY = Math.random() * parseFloat(area.height);
+                
+                leaf.style.left = `calc(${area.left} + ${randomX}%)`;
+                leaf.style.top = `calc(${area.top} + ${randomY}%)`;
+                
+                // 生成叶子 SVG
+                const color = categoryColors[strength.category] || '#FFFFFF';
+                leaf.innerHTML = generateLeafSVG(color, strength.count);
+                
+                // 随机旋转
+                const rotation = -30 + Math.random() * 60;
+                leaf.style.transform = `rotate(${rotation}deg)`;
+                
+                // 点击事件
+                leaf.addEventListener('click', () => showStrengthDetails(index));
+                
+                document.querySelector('.leaves-container').appendChild(leaf);
+                
+            } catch (error) {
+                console.error('Error adding leaf to tree:', error);
+            }
         }
 
-        // 创建小树枝辅助函数 - 更细的线条
-        function createTwig(pathD, width) {
-            const twig = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-            twig.setAttribute('d', pathD);
-            twig.setAttribute('stroke', '#6D4C41');
-            twig.setAttribute('stroke-width', width);
-            twig.setAttribute('fill', 'none');
-            twig.setAttribute('stroke-linecap', 'round');
-            twig.classList.add('tree-twig');
-            return twig;
+        // 生物发光效果
+        function addBioLuminescence() {
+            try {
+                const leaves = document.querySelectorAll('.leaf');
+                
+                leaves.forEach(leaf => {
+                    const numLights = 3 + Math.random() * 3;
+                    
+                    for (let i = 0; i < numLights; i++) {
+                        const light = document.createElement('div');
+                        light.classList.add('bio-luminescence');
+                        
+                        // 在叶子周围随机位置
+                        const angle = Math.random() * Math.PI * 2;
+                        const distance = 5 + Math.random() * 15;
+                        
+                        const x = Math.cos(angle) * distance;
+                        const y = Math.sin(angle) * distance;
+                        
+                        light.style.left = `calc(50% + ${x}px)`;
+                        light.style.top = `calc(50% + ${y}px)`;
+                        
+                        // 随机动画延迟
+                        light.style.animationDelay = `${Math.random() * 2}s`;
+                        
+                        leaf.appendChild(light);
+                    }
+                });
+            } catch (error) {
+                console.error('Error adding bio-luminescence:', error);
+            }
         }
 
         // 更新叶子样式 - 更自然的形状
@@ -351,154 +277,6 @@
                     <text x="50" y="55" text-anchor="middle" fill="white" font-size="16" font-weight="bold">${count}</text>
                 </svg>
             `;
-        }
-
-        // 优化生物发光效果 - 更自然的分布和动画
-        function addBioLuminescence() {
-            try {
-                const treeElement = document.querySelector('.tree');
-                if (!treeElement) {
-                    console.error('Tree element not found');
-                    return;
-                }
-                
-                const treeRect = treeElement.getBoundingClientRect();
-                const fragment = document.createDocumentFragment();
-                
-                // 获取所有树叶区域
-                const foliageAreas = document.querySelectorAll('.foliage-area');
-                
-                // 为每个区域添加发光点
-                foliageAreas.forEach(area => {
-                    const bbox = area.getBBox();
-                    
-                    // 为每个区域生成10-15个发光点
-                    const numLights = 10 + Math.floor(Math.random() * 6);
-                    
-                    for (let i = 0; i < numLights; i++) {
-                        const light = document.createElement('div');
-                        light.classList.add('bio-luminescence');
-                        
-                        // 在椭圆区域内随机放置
-                        const angle = Math.random() * Math.PI * 2;
-                        const radiusX = (Math.random() * 0.8 + 0.2) * bbox.width / 2;
-                        const radiusY = (Math.random() * 0.8 + 0.2) * bbox.height / 2;
-                        
-                        const x = Math.cos(angle) * radiusX + bbox.x + bbox.width/2;
-                        const y = Math.sin(angle) * radiusY + bbox.y + bbox.height/2;
-                        
-                        // 计算相对于视图区域的百分比位置
-                        const percentX = (x / 400) * 100;
-                        const percentY = (y / 500) * 100;
-                        
-                        const size = 2 + Math.random() * 3;
-                        
-                        Object.assign(light.style, {
-                            left: `${percentX}%`,
-                            top: `${percentY}%`,
-                            width: `${size}px`,
-                            height: `${size}px`,
-                            animationDelay: `${Math.random() * 5}s`,
-                            animationDuration: `${2 + Math.random() * 3}s`
-                        });
-                        
-                        fragment.appendChild(light);
-                    }
-                });
-                
-                treeElement.appendChild(fragment);
-            } catch (error) {
-                console.error('Error adding bio-luminescence:', error);
-            }
-        }
-
-        // 更新叶子生成函数 - 使用更自然的叶子形状
-        function addLeafToTree(strength, index) {
-            try {
-                const leaf = document.createElement('div');
-                leaf.classList.add('leaf');
-                leaf.dataset.index = index;
-                
-                // 生成SVG叶子
-                const color = categoryColors[strength.category] || '#FFFFFF';
-                leaf.innerHTML = generateLeafSVG(color, strength.count);
-                
-                // 根据分类选择放置区域
-                let areaIndex;
-                switch(strength.category) {
-                    case 'social': areaIndex = 1; break;      // 左上
-                    case 'academic': areaIndex = 2; break;    // 右上
-                    case 'emotional': areaIndex = 0; break;   // 顶部
-                    case 'creative': areaIndex = 3; break;    // 左中上
-                    case 'physical': areaIndex = 4; break;    // 右中上
-                    case 'character': areaIndex = 0; break;   // 顶部
-                    default: areaIndex = Math.floor(Math.random() * 9);
-                }
-                
-                const foliageArea = document.querySelector(`[data-area="area-${areaIndex}"]`);
-                if (!foliageArea) {
-                    placeLeafRandomly(leaf);
-                    return;
-                }
-                
-                // 获取该区域的位置和大小
-                const bbox = foliageArea.getBBox();
-                
-                // 在椭圆区域内随机放置 - 更自然的分布
-                const angle = Math.random() * Math.PI * 2;
-                const radiusX = (Math.random() * 0.8 + 0.2) * bbox.width / 2;
-                const radiusY = (Math.random() * 0.8 + 0.2) * bbox.height / 2;
-                
-                const x = Math.cos(angle) * radiusX + bbox.x + bbox.width/2;
-                const y = Math.sin(angle) * radiusY + bbox.y + bbox.height/2;
-                
-                // 计算相对于视图区域的百分比位置
-                const percentX = (x / 400) * 100;
-                const percentY = (y / 500) * 100;
-                
-                leaf.style.left = `${percentX}%`;
-                leaf.style.top = `${percentY}%`;
-                
-                // 随机旋转 - 更自然的角度
-                const rotation = -20 + Math.random() * 40; // -20到20度之间的角度
-                leaf.style.transform = `rotate(${rotation}deg)`;
-                
-                // 根据计数调整大小
-                const scale = 0.8 + Math.min(strength.count * 0.05, 0.8); // 最大放大到1.6倍
-                leaf.style.setProperty('--leaf-scale', scale);
-                
-                // 点击事件显示详情
-                leaf.addEventListener('click', () => showStrengthDetails(index));
-                
-                document.querySelector('.tree').appendChild(leaf);
-            } catch (error) {
-                console.error('Error adding leaf to tree:', error);
-                // 如果出错，尝试使用随机放置作为后备方案
-                try {
-                    placeLeafRandomly(leaf);
-                } catch (fallbackError) {
-                    console.error('Fallback placement failed:', fallbackError);
-                }
-            }
-        }
-
-        // 随机放置叶子
-        function placeLeafRandomly(leaf) {
-            const treeElement = document.querySelector('.tree');
-            const treeRect = treeElement.getBoundingClientRect();
-            
-            const centerX = treeRect.width / 2;
-            const centerY = treeRect.height / 2 - 50;
-            
-            const radius = Math.min(treeRect.width, treeRect.height) * 0.4;
-            const angle = Math.random() * Math.PI * 2;
-            const distance = Math.random() * radius;
-            
-            const x = Math.cos(angle) * distance + centerX - 20;
-            const y = Math.sin(angle) * distance + centerY - 20;
-            
-            leaf.style.left = `${x}px`;
-            leaf.style.top = `${y}px`;
         }
 
         // 显示优点详情
@@ -574,34 +352,8 @@
             document.getElementById('strength-description').value = '';
             document.getElementById('strength-date').valueAsDate = new Date();
             
-            // 添加树生长动画
-            const treeSvg = document.querySelector('.tree-svg');
-            treeSvg.classList.add('tree-pulse');
-            
-            // 创建并添加新叶子
-            const leaf = document.createElement('div');
-            leaf.classList.add('leaf');
-            leaf.dataset.index = strengths.length - 1;
-            
-            // 设置随机初始旋转角度
-            const initialRotation = Math.random() * 360;
-            leaf.style.setProperty('--initial-rotation', `${initialRotation}deg`);
-            
-            // 延迟添加叶子，配合树生长动画
-            await new Promise(resolve => setTimeout(resolve, 500));
-            
-            // 添加叶子到树上
-            addLeafToTree(newStrength, strengths.length - 1);
-            
-            // 获取新添加的叶子并添加出现动画
-            const newLeaf = document.querySelector(`.leaf[data-index="${strengths.length - 1}"]`);
-            newLeaf.classList.add('leaf-appear');
-            
-            // 移除树生长动画
-            setTimeout(() => {
-                treeSvg.classList.remove('tree-pulse');
-                newLeaf.classList.remove('leaf-appear');
-            }, 1500);
+            // 初始化树
+            initTree();
             
             // 检查成就
             checkAchievements(strengths.length, category);
@@ -646,16 +398,6 @@
                 setTimeout(() => {
                     leafElement.querySelector('text').textContent = strengths[index].count;
                 }, 1000);
-                
-                // 添加树生长动画
-                const treeSvg = document.querySelector('.tree-svg');
-                treeSvg.classList.add('tree-pulse');
-                
-                // 移除动画类
-                setTimeout(() => {
-                    leafElement.classList.remove('leaf-progress');
-                    treeSvg.classList.remove('tree-pulse');
-                }, 2000);
                 
                 // 检查成就
                 checkAchievements(0, strengths[index].category, strengths[index].count);
@@ -846,34 +588,6 @@
             });
         });
         
-        // 初始化树
-        function initTree() {
-            try {
-                // 获取树容器
-                const treeContainer = document.querySelector('.tree');
-                
-                // 清空现有内容
-                while (treeContainer.firstChild) {
-                    treeContainer.removeChild(treeContainer.firstChild);
-                }
-                
-                // 创建树的SVG结构
-                const treeSvg = createTree();
-                treeContainer.appendChild(treeSvg);
-                
-                // 添加生物发光效果
-                addBioLuminescence();
-                
-                // 添加现有的叶子
-                strengths.forEach((strength, index) => {
-                    addLeafToTree(strength, index);
-                });
-            } catch (error) {
-                console.error('Error initializing tree:', error);
-                alert('初始化树时出错，请刷新页面重试');
-            }
-        }
-
         // 初始化应用
         window.addEventListener('load', () => {
             initTree();
