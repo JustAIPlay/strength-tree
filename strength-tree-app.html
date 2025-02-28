@@ -207,77 +207,78 @@
                 
                 // 创建更自然的树干
                 const trunk = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                trunk.setAttribute('d', 'M200,500 C190,450 185,400 190,350 C195,300 185,250 200,200 C210,250 205,300 210,350 C215,400 210,450 200,500 Z');
+                trunk.setAttribute('d', `
+                    M200,500 
+                    C195,450 190,400 195,350 
+                    C200,300 195,250 200,200 
+                    C205,250 200,300 205,350 
+                    C210,400 205,450 200,500 
+                    M193,450 
+                    C188,430 185,410 188,390 
+                    M207,450 
+                    C212,430 215,410 212,390
+                `);
                 trunk.setAttribute('fill', 'url(#trunkGradient)');
                 trunk.classList.add('svg-trunk');
                 
                 // 添加主要分支 - 更有机的弯曲形状
                 const branches = [];
                 
-                // 左侧分支 - 更加自然的曲线
-                branches.push(createBranch('M195,340 C170,320 140,310 110,320', 5));
-                branches.push(createBranch('M110,320 C90,325 70,330 60,310', 3));
-                branches.push(createBranch('M110,320 C100,300 85,280 95,260', 3));
+                // 左侧主分支
+                branches.push(createBranch('M195,340 C170,320 140,310 110,320 C90,325 70,330 60,310', 5));
+                branches.push(createBranch('M192,290 C160,285 130,270 115,240 C105,220 95,205 75,210', 4));
+                branches.push(createBranch('M190,240 C170,220 155,190 160,160 C165,140 155,120 135,115', 4));
                 
-                branches.push(createBranch('M192,290 C160,285 130,270 115,240', 5));
-                branches.push(createBranch('M115,240 C105,220 95,205 75,210', 3));
-                branches.push(createBranch('M115,240 C110,215 115,190 105,175', 3));
-                
-                branches.push(createBranch('M190,240 C170,220 155,190 160,160', 4));
-                branches.push(createBranch('M160,160 C165,140 155,120 135,115', 3));
-                branches.push(createBranch('M160,160 C145,145 130,140 120,125', 3));
-                
-                // 右侧分支
-                branches.push(createBranch('M205,340 C230,320 260,310 290,320', 5));
-                branches.push(createBranch('M290,320 C310,325 330,330 340,310', 3));
-                branches.push(createBranch('M290,320 C300,300 315,280 305,260', 3));
-                
-                branches.push(createBranch('M208,290 C240,285 270,270 285,240', 5));
-                branches.push(createBranch('M285,240 C295,220 305,205 325,210', 3));
-                branches.push(createBranch('M285,240 C290,215 285,190 295,175', 3));
-                
-                branches.push(createBranch('M210,240 C230,220 245,190 240,160', 4));
-                branches.push(createBranch('M240,160 C235,140 245,120 265,115', 3));
-                branches.push(createBranch('M240,160 C255,145 270,140 280,125', 3));
+                // 右侧主分支
+                branches.push(createBranch('M205,340 C230,320 260,310 290,320 C310,325 330,330 340,310', 5));
+                branches.push(createBranch('M208,290 C240,285 270,270 285,240 C295,220 305,205 325,210', 4));
+                branches.push(createBranch('M210,240 C230,220 245,190 240,160 C235,140 245,120 265,115', 4));
                 
                 // 顶部分支
-                branches.push(createBranch('M200,200 C190,180 185,160 200,140', 4));
-                branches.push(createBranch('M200,140 C190,120 200,100 190,80', 3));
-                branches.push(createBranch('M200,140 C210,120 200,100 210,80', 3));
+                branches.push(createBranch('M200,200 C190,180 185,160 200,140 C210,120 200,100 190,80', 4));
+                branches.push(createBranch('M200,140 C210,120 215,100 210,80', 3));
                 
                 // 小树枝 - 增加更多细节
                 const twigs = [];
+                
                 // 左侧小枝
-                twigs.push(createTwig('M135,115 C125,105 115,100 105,105', 1.5));
-                twigs.push(createTwig('M120,125 C110,120 100,125 95,115', 1.5));
-                twigs.push(createTwig('M105,175 C95,170 85,165 80,155', 1.5));
-                twigs.push(createTwig('M75,210 C65,205 55,210 50,200', 1.5));
-                twigs.push(createTwig('M95,260 C85,250 75,255 65,250', 1.5));
-                twigs.push(createTwig('M60,310 C50,305 45,295 35,300', 1.5));
+                twigs.push(createTwig('M135,115 C125,105 115,100 105,105 C95,110 85,105 80,95', 1.5));
+                twigs.push(createTwig('M105,175 C95,170 85,165 80,155 C75,145 65,140 60,145', 1.5));
+                twigs.push(createTwig('M75,210 C65,205 55,210 50,200 C45,190 35,195 30,185', 1.5));
+                twigs.push(createTwig('M95,260 C85,250 75,255 65,250 C55,245 45,250 40,240', 1.5));
+                twigs.push(createTwig('M60,310 C50,305 45,295 35,300 C25,305 20,295 15,300', 1.5));
                 
                 // 右侧小枝
-                twigs.push(createTwig('M265,115 C275,105 285,100 295,105', 1.5));
-                twigs.push(createTwig('M280,125 C290,120 300,125 305,115', 1.5));
-                twigs.push(createTwig('M295,175 C305,170 315,165 320,155', 1.5));
-                twigs.push(createTwig('M325,210 C335,205 345,210 350,200', 1.5));
-                twigs.push(createTwig('M305,260 C315,250 325,255 335,250', 1.5));
-                twigs.push(createTwig('M340,310 C350,305 355,295 365,300', 1.5));
+                twigs.push(createTwig('M265,115 C275,105 285,100 295,105 C305,110 315,105 320,95', 1.5));
+                twigs.push(createTwig('M295,175 C305,170 315,165 320,155 C325,145 335,140 340,145', 1.5));
+                twigs.push(createTwig('M325,210 C335,205 345,210 350,200 C355,190 365,195 370,185', 1.5));
+                twigs.push(createTwig('M305,260 C315,250 325,255 335,250 C345,245 355,250 360,240', 1.5));
+                twigs.push(createTwig('M340,310 C350,305 355,295 365,300 C375,305 380,295 385,300', 1.5));
                 
                 // 顶部小枝
-                twigs.push(createTwig('M190,80 C180,70 175,60 185,50', 1.5));
-                twigs.push(createTwig('M210,80 C220,70 225,60 215,50', 1.5));
+                twigs.push(createTwig('M190,80 C180,70 175,60 185,50 C195,40 190,30 180,25', 1.5));
+                twigs.push(createTwig('M210,80 C220,70 225,60 215,50 C205,40 210,30 220,25', 1.5));
+                
+                // 添加更多装饰性的小枝条
+                twigs.push(createTwig('M150,200 C140,195 135,185 145,175', 1));
+                twigs.push(createTwig('M250,200 C260,195 265,185 255,175', 1));
+                twigs.push(createTwig('M170,280 C160,275 155,265 165,255', 1));
+                twigs.push(createTwig('M230,280 C240,275 245,265 235,255', 1));
                 
                 // 添加模拟树叶区域 - 更自然的分布
                 const foliageGroups = [
-                    { cx: 200, cy: 100, rx: 100, ry: 80 },     // 顶部
-                    { cx: 150, cy: 140, rx: 70, ry: 55 },      // 左上
-                    { cx: 250, cy: 140, rx: 70, ry: 55 },      // 右上
-                    { cx: 115, cy: 200, rx: 60, ry: 45 },      // 左中上
-                    { cx: 285, cy: 200, rx: 60, ry: 45 },      // 右中上
-                    { cx: 90, cy: 270, rx: 60, ry: 45 },       // 左中下
-                    { cx: 310, cy: 270, rx: 60, ry: 45 },      // 右中下
-                    { cx: 90, cy: 330, rx: 55, ry: 40 },       // 左下
-                    { cx: 310, cy: 330, rx: 55, ry: 40 }       // 右下
+                    { cx: 200, cy: 90, rx: 110, ry: 85 },      // 顶部中央
+                    { cx: 145, cy: 130, rx: 75, ry: 60 },      // 左上
+                    { cx: 255, cy: 130, rx: 75, ry: 60 },      // 右上
+                    { cx: 110, cy: 190, rx: 65, ry: 50 },      // 左中上
+                    { cx: 290, cy: 190, rx: 65, ry: 50 },      // 右中上
+                    { cx: 85, cy: 260, rx: 65, ry: 50 },       // 左中下
+                    { cx: 315, cy: 260, rx: 65, ry: 50 },      // 右中下
+                    { cx: 80, cy: 320, rx: 60, ry: 45 },       // 左下
+                    { cx: 320, cy: 320, rx: 60, ry: 45 },      // 右下
+                    { cx: 170, cy: 160, rx: 45, ry: 35 },      // 左中填充
+                    { cx: 230, cy: 160, rx: 45, ry: 35 },      // 右中填充
+                    { cx: 200, cy: 220, rx: 40, ry: 30 }       // 中央填充
                 ];
                 
                 // 将所有元素添加到SVG
